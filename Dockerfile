@@ -9,17 +9,17 @@ RUN npm ci || npm install
 COPY . .
 RUN npm run build
 
-# Stage 2: Serve static files with nginx
+# Stage 2: Serve static files with nginx (Cloud Run compatible)
 FROM nginx:alpine
 
 # Copy built assets
 COPY --from=build /app/dist /usr/share/nginx/html
 
-# Copy default nginx config
-RUN rm -f /etc/nginx/conf.d/default.conf
+# Use a template that reads $PORT at runtime
+RUN mkdir -p /etc/nginx/templates
+COPY nginx.conf.template /etc/nginx/templates/default.conf.template
 
-# Minimal SPA config
-RUN printf 'server {\n  listen 80;\n  server_name _;\n  root /usr/share/nginx/html;\n  index index.html;\n  location / {\n    try_files $uri $uri/ /index.html;\n  }\n}\n' > /etc/nginx/conf.d/spa.conf
+ENV PORT=8080
 
-EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
+EXPOSE 8080
+CMD ["/bin/sh", "-c", "envsubst < /etc/nginx/templates/default.conf.template > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'" ]
