@@ -12,14 +12,9 @@ RUN npm run build
 # Stage 2: Serve static files with nginx (Cloud Run compatible)
 FROM nginx:alpine
 
-# Copy built assets
 COPY --from=build /app/dist /usr/share/nginx/html
-
-# Use a template that reads $PORT at runtime
-RUN mkdir -p /etc/nginx/templates
-COPY nginx.conf.template /etc/nginx/templates/default.conf.template
-
-ENV PORT=8080
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 8080
-CMD ["/bin/sh", "-c", "envsubst < /etc/nginx/templates/default.conf.template > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'" ]
+CMD ["nginx", "-g", "daemon off;"]
+
